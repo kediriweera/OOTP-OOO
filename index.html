@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team OOO Calendar</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Team OOO Calendar</h1>
+      <div class="year-nav">
+        <button id="prev-year" aria-label="Previous year">&#8249;</button>
+        <span id="current-year"></span>
+        <button id="next-year" aria-label="Next year">&#8250;</button>
+        <button id="today-btn" class="today-btn">Today</button>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="sidebar">
+
+        <section class="sidebar-section">
+          <h2>Team Members</h2>
+          <ul id="members-list"></ul>
+          <button id="add-member-btn" class="btn-primary">+ Add Member</button>
+        </section>
+
+        <section class="sidebar-section">
+          <h2>Add OOO Entry</h2>
+          <form id="add-ooo-form" novalidate>
+            <label>
+              Member
+              <select id="ooo-member" required></select>
+            </label>
+            <div class="date-row">
+              <label>
+                From
+                <input type="date" id="ooo-start" required>
+              </label>
+              <label>
+                To
+                <input type="date" id="ooo-end" required>
+              </label>
+            </div>
+            <label>
+              Note <span class="optional">(optional)</span>
+              <input type="text" id="ooo-note" placeholder="Vacation, conference…" maxlength="60">
+            </label>
+            <button type="submit" class="btn-primary">Add Entry</button>
+          </form>
+        </section>
+
+        <section class="sidebar-section entries-section">
+          <h2>OOO Entries <span id="entries-count" class="badge"></span></h2>
+          <ul id="entries-list"></ul>
+        </section>
+
+      </aside>
+
+      <main class="calendar-area">
+        <div id="calendar-grid" class="calendar-grid"></div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Add Member Modal -->
+  <div id="member-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-content">
+      <h3 id="modal-title">Add Team Member</h3>
+      <label>
+        Name
+        <input type="text" id="member-name" placeholder="e.g. Jane Doe" maxlength="40" autocomplete="off">
+      </label>
+      <label>
+        Color
+        <div id="color-picker" class="color-picker" role="group" aria-label="Choose a color"></div>
+      </label>
+      <div class="modal-actions">
+        <button id="cancel-member" class="btn-secondary">Cancel</button>
+        <button id="save-member" class="btn-primary">Add Member</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating tooltip -->
+  <div id="floating-tooltip" class="floating-tooltip hidden" aria-hidden="true"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
