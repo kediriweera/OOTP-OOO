@@ -175,7 +175,7 @@ function applyTheme(dark) {
   document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
   const btn = document.getElementById('theme-toggle');
   if (btn) btn.innerHTML = dark ? '&#9728;' : '&#9790;'; // ☀ / ☾
-  localStorage.setItem('ooo-theme', dark ? 'dark' : 'light');
+  try { localStorage.setItem('ooo-theme', dark ? 'dark' : 'light'); } catch (_) {}
 }
 
 function toggleDarkMode() {
@@ -851,8 +851,12 @@ function setupEventListeners() {
 function init() {
   document.getElementById('version-badge').textContent = 'v' + VERSION;
   // Restore saved theme before first render so colours are correct
-  const savedTheme = localStorage.getItem('ooo-theme');
-  applyTheme(savedTheme === 'dark');
+  try {
+    const savedTheme = localStorage.getItem('ooo-theme');
+    applyTheme(savedTheme === 'dark');
+  } catch (_) {
+    applyTheme(false);
+  }
   loadState();
   setupEventListeners();
   renderAll();
