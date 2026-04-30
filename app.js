@@ -2,7 +2,7 @@
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const VERSION = '1.5';
+const VERSION = '1.6';
 const STORAGE_KEY = 'team-ooo-v1';
 
 const MONTH_NAMES = [
@@ -624,6 +624,128 @@ function closeMemberModal() {
   document.getElementById('member-modal').classList.add('hidden');
 }
 
+// ── Stats / Pie Chart ─────────────────────────────────────────────────────────
+
+/** Returns [{ member, days }] sorted by days desc for the current year */
+function getOooDaysPerMember() {
+  const y = state.year;
+  const yearStart = ymd(y, 1, 1);
+  const yearEnd   = ymd(y, 12, 31);
+  const dayMap = new Map();
+
+  for (const entry of state.entries) {
+    const start = entry.startDate > yearStart ? entry.startDate : yearStart;
+    const end   = entry.endDate   < yearEnd   ? entry.endDate   : yearEnd;
+    if (start > end) continue;
+    const days = Math.round((new Date(end + 'T00:00:00') - new Date(start + 'T00:00:00')) / 86400000) + 1;
+    dayMap.set(entry.memberId, (dayMap.get(entry.memberId) || 0) + days);
+  }
+
+  return state.members
+    .filter(m => dayMap.has(m.id))
+    .map(m => ({ member: m, days: dayMap.get(m.id) }))
+    .sort((a, b) => b.days - a.days);
+}
+
+function drawDonutChart(canvas, data) {
+  const ctx   = canvas.getContext('2d');
+  const size  = canvas.width;
+  const cx    = size / 2;
+  const cy    = size / 2;
+  const outer = size / 2 - 8;
+  const inner = outer * 0.52;
+
+  ctx.clearRect(0, 0, size, size);
+
+  const total = data.reduce((s, d) => s + d.days, 0);
+  const cs    = getComputedStyle(document.documentElement);
+  const surfaceColor = cs.getPropertyValue('--surface').trim() || '#fff';
+  const textColor    = cs.getPropertyValue('--text').trim()    || '#111';
+  const mutedColor   = cs.getPropertyValue('--text-muted').trim() || '#888';
+
+  // Draw slices
+  let angle = -Math.PI / 2;
+  data.forEach(({ member, days }) => {
+    const sweep = (days / total) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, outer, angle, angle + sweep);
+    ctx.closePath();
+    ctx.fillStyle = member.color;
+    ctx.fill();
+    ctx.strokeStyle = surfaceColor;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    angle += sweep;
+  });
+
+  // Donut hole
+  ctx.beginPath();
+  ctx.arc(cx, cy, inner, 0, 2 * Math.PI);
+  ctx.fillStyle = surfaceColor;
+  ctx.fill();
+
+  // Centre text
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle    = textColor;
+  ctx.font         = `bold ${Math.round(size * 0.1)}px sans-serif`;
+  ctx.fillText(total, cx, cy - size * 0.05);
+  ctx.fillStyle = mutedColor;
+  ctx.font      = `${Math.round(size * 0.07)}px sans-serif`;
+  ctx.fillText('days OOO', cx, cy + size * 0.07);
+}
+
+function openStatsModal() {
+  const body  = document.getElementById('stats-body');
+  const title = document.getElementById('stats-title');
+  title.textContent = `OOO Stats — ${state.year}`;
+
+  const data = getOooDaysPerMember();
+
+  if (state.members.length === 0) {
+    body.innerHTML = '<p class="empty-msg" style="padding:24px 0">Add team members to see stats.</p>';
+    document.getElementById('stats-modal').classList.remove('hidden');
+    return;
+  }
+  if (data.length === 0) {
+    body.innerHTML = '<p class="empty-msg" style="padding:24px 0">No OOO entries for this year.</p>';
+    document.getElementById('stats-modal').classList.remove('hidden');
+    return;
+  }
+
+  const total = data.reduce((s, d) => s + d.days, 0);
+  const size  = 220;
+
+  body.innerHTML = `
+    <canvas id="pie-canvas" width="${size}" height="${size}" style="display:block;margin:0 auto 20px"></canvas>
+    <ul class="pie-legend"></ul>
+  `;
+
+  const canvas = document.getElementById('pie-canvas');
+  drawDonutChart(canvas, data);
+
+  const legend = body.querySelector('.pie-legend');
+  data.forEach(({ member, days }) => {
+    const pct = Math.round((days / total) * 100);
+    const li = document.createElement('li');
+    li.className = 'pie-legend-item';
+    li.innerHTML = `
+      <span class="pie-swatch" style="background:${member.color}"></span>
+      <span class="pie-member">${escHtml(member.name)}</span>
+      <span class="pie-days">${days}d</span>
+      <span class="pie-pct">${pct}%</span>
+    `;
+    legend.appendChild(li);
+  });
+
+  document.getElementById('stats-modal').classList.remove('hidden');
+}
+
+function closeStatsModal() {
+  document.getElementById('stats-modal').classList.add('hidden');
+}
+
 // ── HTML escape ───────────────────────────────────────────────────────────────
 
 function escHtml(str) {
@@ -655,6 +777,11 @@ function setupEventListeners() {
   });
 
   document.getElementById('theme-toggle').addEventListener('click', toggleDarkMode);
+  document.getElementById('stats-btn').addEventListener('click', openStatsModal);
+  document.getElementById('close-stats').addEventListener('click', closeStatsModal);
+  document.getElementById('stats-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeStatsModal();
+  });
 
   document.getElementById('today-btn').addEventListener('click', () => {
     state.year = new Date().getFullYear();

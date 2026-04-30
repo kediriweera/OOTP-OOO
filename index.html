@@ -11,7 +11,7 @@
     <header>
       <div class="header-title">
         <h1>Team OOO Calendar</h1>
-        <span id="version-badge" class="version-badge">v1.5</span>
+        <span id="version-badge" class="version-badge">v1.6</span>
       </div>
       <div class="year-nav">
         <button id="prev-year" aria-label="Previous year">&#8249;</button>
@@ -19,6 +19,7 @@
         <button id="next-year" aria-label="Next year">&#8250;</button>
         <button id="today-btn" class="today-btn">Today</button>
         <button id="theme-toggle" class="theme-btn" title="Toggle dark mode">&#9790;</button>
+        <button id="stats-btn" class="stats-btn" title="View OOO stats">Stats</button>
       </div>
     </header>
 
@@ -91,6 +92,17 @@
         <button id="cancel-member" class="btn-secondary">Cancel</button>
         <button id="save-member" class="btn-primary">Add Member</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Stats Modal -->
+  <div id="stats-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="stats-title">
+    <div class="modal-content stats-modal-content">
+      <div class="stats-header">
+        <h3 id="stats-title">OOO Stats</h3>
+        <button id="close-stats" class="btn-icon" title="Close">&times;</button>
+      </div>
+      <div id="stats-body"></div>
     </div>
   </div>
 
