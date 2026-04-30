@@ -2,6 +2,7 @@
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
+const VERSION = '1.3';
 const STORAGE_KEY = 'team-ooo-v1';
 
 const MONTH_NAMES = [
@@ -582,6 +583,7 @@ function setupEventListeners() {
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 function init() {
+  document.getElementById('version-badge').textContent = 'v' + VERSION;
   loadState();
   setupEventListeners();
   renderAll();
