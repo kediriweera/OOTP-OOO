@@ -2,7 +2,7 @@
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const VERSION = '1.6';
+const VERSION = '1.7';
 const STORAGE_KEY = 'team-ooo-v1';
 
 const MONTH_NAMES = [
@@ -68,6 +68,62 @@ let state = {
  * @typedef {{ id: string, memberId: string, startDate: string, endDate: string, note: string }} Entry
  */
 
+// ── Firebase ──────────────────────────────────────────────────────────────────
+
+const FIREBASE_CONFIG = {
+  apiKey:            'AIzaSyCKWZxolet-CXHNvOqCJsLrQ6Qob5GQNSw',
+  authDomain:        'team-ooo-calendar.firebaseapp.com',
+  projectId:         'team-ooo-calendar',
+  storageBucket:     'team-ooo-calendar.firebasestorage.app',
+  messagingSenderId: '380921330594',
+  appId:             '1:380921330594:web:b671a2ccf55a5450a250fb',
+};
+
+let docRef = null; // Firestore document reference
+
+function setConnectionStatus(status) {
+  const dot = document.getElementById('connection-status');
+  if (!dot) return;
+  if (status === 'connected') {
+    dot.className = 'connection-dot connected';
+    dot.title = 'Synced with cloud';
+  } else if (status === 'offline') {
+    dot.className = 'connection-dot offline';
+    dot.title = 'Offline — data saved locally only';
+  } else {
+    dot.className = 'connection-dot';
+    dot.title = 'Connecting...';
+  }
+}
+
+function initFirebase() {
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    const db = firebase.firestore();
+    docRef = db.collection('ooo-data').doc('main');
+
+    docRef.onSnapshot(doc => {
+      if (doc.exists()) {
+        const data = doc.data();
+        const prevFilter = state.filterMemberId;
+        state.members = data.members || [];
+        state.entries = data.entries || [];
+        state.filterMemberId = prevFilter;
+        // Also cache locally
+        try { store.setItem(STORAGE_KEY, JSON.stringify({ members: state.members, entries: state.entries })); } catch (_) {}
+      }
+      setConnectionStatus('connected');
+      renderAll();
+    }, err => {
+      console.warn('Firestore unavailable:', err);
+      setConnectionStatus('offline');
+    });
+  } catch (err) {
+    console.warn('Firebase init failed:', err);
+    setConnectionStatus('offline');
+  }
+}
+
 // ── Storage ───────────────────────────────────────────────────────────────────
 
 // Safe storage: uses localStorage when available, otherwise falls back to
@@ -87,7 +143,7 @@ const store = (() => {
   }
 })();
 
-function loadState() {
+function loadLocalState() {
   try {
     const raw = store.getItem(STORAGE_KEY);
     if (raw) {
@@ -100,9 +156,13 @@ function loadState() {
 }
 
 function saveState() {
-  try {
-    store.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (_) {}
+  // Write to Firestore (real-time sync across all devices)
+  if (docRef) {
+    docRef.set({ members: state.members, entries: state.entries })
+      .catch(err => console.warn('Firestore save failed:', err));
+  }
+  // Always keep a local copy as backup
+  try { store.setItem(STORAGE_KEY, JSON.stringify({ members: state.members, entries: state.entries })); } catch (_) {}
 }
 
 // ── Holidays ──────────────────────────────────────────────────────────────────
@@ -869,9 +929,10 @@ function init() {
   document.getElementById('version-badge').textContent = 'v' + VERSION;
   // Restore saved theme before first render so colours are correct
   applyTheme(store.getItem('ooo-theme') === 'dark');
-  loadState();
+  loadLocalState();     // show cached data instantly
   setupEventListeners();
   renderAll();
+  initFirebase();       // then sync with cloud in background
 }
 
 document.addEventListener('DOMContentLoaded', init);

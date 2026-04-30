@@ -98,6 +98,18 @@ header h1 {
   letter-spacing: 0.02em;
 }
 
+.connection-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+.connection-dot.connected { background: #22c55e; }
+.connection-dot.offline   { background: var(--text-light); }
+
 .year-nav {
   display: flex;
   align-items: center;
