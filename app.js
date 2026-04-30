@@ -16,6 +16,21 @@ const MONTH_SHORT = [
 
 const DOW_ABBR = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
+const MONTH_COLORS = [
+  '#dbeafe', // Jan – blue
+  '#fce7f3', // Feb – pink
+  '#dcfce7', // Mar – green
+  '#fef9c3', // Apr – yellow
+  '#f3e8ff', // May – purple
+  '#ffedd5', // Jun – orange
+  '#fee2e2', // Jul – red
+  '#fef3c7', // Aug – amber
+  '#ccfbf1', // Sep – teal
+  '#ecfccb', // Oct – lime
+  '#e0f2fe', // Nov – sky
+  '#e0e7ff', // Dec – indigo
+];
+
 const PRESET_COLORS = [
   '#e53935', '#d81b60', '#8e24aa', '#5e35b1',
   '#1e88e5', '#039be5', '#00897b', '#43a047',
@@ -177,6 +192,7 @@ function renderCalendar() {
 function buildMonthCard(year, monthIdx) {
   const card = document.createElement('div');
   card.className = 'month-card';
+  card.style.background = MONTH_COLORS[monthIdx];
 
   const heading = document.createElement('div');
   heading.className = 'month-name';
