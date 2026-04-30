@@ -71,6 +71,41 @@ function saveState() {
   } catch (_) {}
 }
 
+// ── Holidays ──────────────────────────────────────────────────────────────────
+
+/** Returns the date string for the Nth occurrence of a weekday in a month (0-indexed month, 0=Sun weekday) */
+function nthWeekday(year, month, weekday, n) {
+  const firstDow = new Date(year, month, 1).getDay();
+  const day = 1 + ((weekday - firstDow + 7) % 7) + (n - 1) * 7;
+  return ymd(year, month + 1, day);
+}
+
+/** Returns the date string for the last occurrence of a weekday in a month */
+function lastWeekday(year, month, weekday) {
+  const lastDay = new Date(year, month + 1, 0);
+  const day = lastDay.getDate() - ((lastDay.getDay() - weekday + 7) % 7);
+  return ymd(year, month + 1, day);
+}
+
+/** Returns a Map of dateStr → holiday name for the given year (US federal holidays) */
+function getHolidaysForYear(year) {
+  const h = new Map();
+  // Fixed-date holidays
+  h.set(ymd(year,  1,  1), "New Year's Day");
+  h.set(ymd(year,  6, 19), 'Juneteenth');
+  h.set(ymd(year,  7,  4), 'Independence Day');
+  h.set(ymd(year, 11, 11), 'Veterans Day');
+  h.set(ymd(year, 12, 25), 'Christmas Day');
+  // Floating holidays
+  h.set(nthWeekday(year,  0, 1, 3), 'MLK Day');          // 3rd Mon Jan
+  h.set(nthWeekday(year,  1, 1, 3), "Presidents' Day");  // 3rd Mon Feb
+  h.set(lastWeekday(year, 4, 1),    'Memorial Day');      // Last Mon May
+  h.set(nthWeekday(year,  8, 1, 1), 'Labor Day');        // 1st Mon Sep
+  h.set(nthWeekday(year,  9, 1, 2), 'Columbus Day');     // 2nd Mon Oct
+  h.set(nthWeekday(year, 10, 4, 4), 'Thanksgiving');     // 4th Thu Nov
+  return h;
+}
+
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
 function uid() {
@@ -184,12 +219,13 @@ function populateMemberSelect() {
 function renderCalendar() {
   const grid = document.getElementById('calendar-grid');
   grid.innerHTML = '';
+  const holidays = getHolidaysForYear(state.year);
   for (let mo = 0; mo < 12; mo++) {
-    grid.appendChild(buildMonthCard(state.year, mo));
+    grid.appendChild(buildMonthCard(state.year, mo, holidays));
   }
 }
 
-function buildMonthCard(year, monthIdx) {
+function buildMonthCard(year, monthIdx, holidays) {
   const card = document.createElement('div');
   card.className = 'month-card';
   card.style.background = MONTH_COLORS[monthIdx];
@@ -235,6 +271,11 @@ function buildMonthCard(year, monthIdx) {
     if (dow === 0 || dow === 6) cell.classList.add('weekend');
     if (ds === today) cell.classList.add('today');
     if (ooos.length > 0) cell.classList.add('has-ooo');
+    const holiday = holidays.get(ds);
+    if (holiday) {
+      cell.classList.add('holiday');
+      cell.dataset.holiday = holiday;
+    }
 
     // Date number
     const num = document.createElement('div');
@@ -331,18 +372,22 @@ function renderColorPicker(preSelected) {
 const floatingTooltip = (() => {
   const el = document.getElementById('floating-tooltip');
 
-  function show(dateStr, ooos, anchorRect) {
+  function show(dateStr, ooos, holiday, anchorRect) {
     const d = new Date(dateStr + 'T00:00:00');
     const dateLabel = d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 
-    el.innerHTML = `<div class="tip-date">${escHtml(dateLabel)}</div>` +
-      ooos.map(({ entry, member }) =>
-        `<div class="tip-entry">
-          <span class="tip-dot" style="background:${member.color}"></span>
-          <span class="tip-name">${escHtml(member.name)}</span>
-          ${entry.note ? `<span class="tip-note"> · ${escHtml(entry.note)}</span>` : ''}
-        </div>`
-      ).join('');
+    let html = `<div class="tip-date">${escHtml(dateLabel)}</div>`;
+    if (holiday) {
+      html += `<div class="tip-holiday">★ ${escHtml(holiday)}</div>`;
+    }
+    html += ooos.map(({ entry, member }) =>
+      `<div class="tip-entry">
+        <span class="tip-dot" style="background:${member.color}"></span>
+        <span class="tip-name">${escHtml(member.name)}</span>
+        ${entry.note ? `<span class="tip-note"> · ${escHtml(entry.note)}</span>` : ''}
+      </div>`
+    ).join('');
+    el.innerHTML = html;
 
     el.classList.remove('hidden');
 
@@ -517,11 +562,12 @@ function setupEventListeners() {
 
   // Calendar tooltip on hover
   document.getElementById('calendar-grid').addEventListener('mouseover', e => {
-    const cell = e.target.closest('.day-cell.has-ooo');
-    if (!cell) { floatingTooltip.hide(); return; }
+    const cell = e.target.closest('.day-cell');
+    if (!cell || cell.classList.contains('empty')) { floatingTooltip.hide(); return; }
     const ooos = getOooForDate(cell.dataset.date);
-    if (ooos.length === 0) { floatingTooltip.hide(); return; }
-    floatingTooltip.show(cell.dataset.date, ooos, cell.getBoundingClientRect());
+    const holiday = cell.dataset.holiday || null;
+    if (!ooos.length && !holiday) { floatingTooltip.hide(); return; }
+    floatingTooltip.show(cell.dataset.date, ooos, holiday, cell.getBoundingClientRect());
   });
 
   document.getElementById('calendar-grid').addEventListener('mouseleave', () => {
