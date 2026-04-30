@@ -7,15 +7,39 @@
   --text-light: #9ca3af;
   --primary: #4f46e5;
   --primary-hover: #4338ca;
+  --primary-tint: #eef2ff;
   --danger: #ef4444;
   --danger-bg: #fee2e2;
   --today-color: #4f46e5;
+  --holiday-ring: #f59e0b;
+  --holiday-text: #92400e;
   --radius: 10px;
   --radius-sm: 5px;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.07);
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --border: #334155;
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-light: #64748b;
+  --primary: #818cf8;
+  --primary-hover: #a5b4fc;
+  --primary-tint: #1e1b4b;
+  --danger: #f87171;
+  --danger-bg: #3f0f0f;
+  --today-color: #818cf8;
+  --holiday-ring: #fbbf24;
+  --holiday-text: #fde68a;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4), 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 *, *::before, *::after {
@@ -118,8 +142,14 @@ header h1 {
   padding: 0 10px !important;
 }
 
+.theme-btn {
+  font-size: 16px !important;
+  padding: 0 8px !important;
+  line-height: 1;
+}
+
 .today-btn:hover {
-  background: #eef2ff !important;
+  background: var(--primary-tint) !important;
 }
 
 /* ── Layout ───────────────────────────────────────────────────────────────── */
@@ -444,7 +474,7 @@ header h1 {
 .filter-indicator {
   font-size: 11px;
   color: var(--primary);
-  background: #eef2ff;
+  background: var(--primary-tint);
   border-radius: var(--radius-sm);
   padding: 5px 8px;
   margin-bottom: 6px;
@@ -480,7 +510,7 @@ header h1 {
 }
 
 .member-item.member-filtered {
-  background: #eef2ff;
+  background: var(--primary-tint);
   border-left: 3px solid var(--primary);
   padding-left: 5px;
 }
@@ -555,7 +585,7 @@ header h1 {
   right: 1px;
   width: 13px;
   height: 13px;
-  background: #ef4444;
+  background: var(--danger);
   color: white;
   font-size: 8px;
   font-weight: 700;
@@ -568,12 +598,12 @@ header h1 {
 
 .day-cell.holiday {
   cursor: pointer;
-  box-shadow: inset 0 0 0 1.5px #f59e0b;
+  box-shadow: inset 0 0 0 1.5px var(--holiday-ring);
   border-radius: 4px;
 }
 
 .day-cell.holiday .day-num {
-  color: #92400e;
+  color: var(--holiday-text);
   font-weight: 700;
 }
 

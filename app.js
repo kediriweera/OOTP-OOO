@@ -2,7 +2,7 @@
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const VERSION = '1.4';
+const VERSION = '1.5';
 const STORAGE_KEY = 'team-ooo-v1';
 
 const MONTH_NAMES = [
@@ -16,6 +16,21 @@ const MONTH_SHORT = [
 ];
 
 const DOW_ABBR = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+
+const MONTH_COLORS_DARK = [
+  '#1e3a5f', // Jan – blue
+  '#3d1a2e', // Feb – pink
+  '#14532d', // Mar – green
+  '#3d2e00', // Apr – yellow
+  '#2d1a4d', // May – purple
+  '#3d2200', // Jun – orange
+  '#3d1a1a', // Jul – red
+  '#3d2d00', // Aug – amber
+  '#0d2e2b', // Sep – teal
+  '#1a2e00', // Oct – lime
+  '#0c2d3d', // Nov – sky
+  '#1a1f5e', // Dec – indigo
+];
 
 const MONTH_COLORS = [
   '#dbeafe', // Jan – blue
@@ -148,6 +163,24 @@ function getThisWeekDates() {
     d.setDate(today.getDate() - dow + i);
     return ymd(d.getFullYear(), d.getMonth() + 1, d.getDate());
   });
+}
+
+// ── Theme ─────────────────────────────────────────────────────────────────────
+
+function isDark() {
+  return document.documentElement.getAttribute('data-theme') === 'dark';
+}
+
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.innerHTML = dark ? '&#9728;' : '&#9790;'; // ☀ / ☾
+  localStorage.setItem('ooo-theme', dark ? 'dark' : 'light');
+}
+
+function toggleDarkMode() {
+  applyTheme(!isDark());
+  renderCalendar(); // re-render month cards to swap colour palette
 }
 
 /** Next unused color from PRESET_COLORS */
@@ -303,7 +336,7 @@ function renderCalendar() {
 function buildMonthCard(year, monthIdx, holidays) {
   const card = document.createElement('div');
   card.className = 'month-card';
-  card.style.background = MONTH_COLORS[monthIdx];
+  card.style.background = (isDark() ? MONTH_COLORS_DARK : MONTH_COLORS)[monthIdx];
 
   const heading = document.createElement('div');
   heading.className = 'month-name';
@@ -621,6 +654,8 @@ function setupEventListeners() {
     renderEntriesList();
   });
 
+  document.getElementById('theme-toggle').addEventListener('click', toggleDarkMode);
+
   document.getElementById('today-btn').addEventListener('click', () => {
     state.year = new Date().getFullYear();
     saveState();
@@ -683,6 +718,9 @@ function setupEventListeners() {
 
 function init() {
   document.getElementById('version-badge').textContent = 'v' + VERSION;
+  // Restore saved theme before first render so colours are correct
+  const savedTheme = localStorage.getItem('ooo-theme');
+  applyTheme(savedTheme === 'dark');
   loadState();
   setupEventListeners();
   renderAll();
