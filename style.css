@@ -619,6 +619,15 @@ header h1 {
   font-weight: 700;
 }
 
+.day-cell.weekend {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+}
+
+[data-theme="dark"] .day-cell.weekend {
+  background: rgba(0, 0, 0, 0.25);
+}
+
 .day-cell.weekend .day-num {
   color: var(--text-muted);
 }
