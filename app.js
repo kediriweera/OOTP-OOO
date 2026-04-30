@@ -658,10 +658,12 @@ function drawDonutChart(canvas, data) {
   ctx.clearRect(0, 0, size, size);
 
   const total = data.reduce((s, d) => s + d.days, 0);
-  const cs    = getComputedStyle(document.documentElement);
-  const surfaceColor = cs.getPropertyValue('--surface').trim() || '#fff';
-  const textColor    = cs.getPropertyValue('--text').trim()    || '#111';
-  const mutedColor   = cs.getPropertyValue('--text-muted').trim() || '#888';
+
+  // Use direct colours based on theme instead of CSS variable lookup
+  const dark        = isDark();
+  const surfaceColor = dark ? '#1e293b' : '#ffffff';
+  const textColor    = dark ? '#f1f5f9' : '#111827';
+  const mutedColor   = dark ? '#94a3b8' : '#6b7280';
 
   // Draw slices
   let angle = -Math.PI / 2;
@@ -697,30 +699,33 @@ function drawDonutChart(canvas, data) {
 }
 
 function openStatsModal() {
+  const modal = document.getElementById('stats-modal');
   const body  = document.getElementById('stats-body');
   const title = document.getElementById('stats-title');
-  title.textContent = `OOO Stats — ${state.year}`;
+  title.textContent = 'OOO Stats — ' + state.year;
 
   const data = getOooDaysPerMember();
 
   if (state.members.length === 0) {
     body.innerHTML = '<p class="empty-msg" style="padding:24px 0">Add team members to see stats.</p>';
-    document.getElementById('stats-modal').classList.remove('hidden');
+    modal.classList.remove('hidden');
     return;
   }
   if (data.length === 0) {
     body.innerHTML = '<p class="empty-msg" style="padding:24px 0">No OOO entries for this year.</p>';
-    document.getElementById('stats-modal').classList.remove('hidden');
+    modal.classList.remove('hidden');
     return;
   }
 
   const total = data.reduce((s, d) => s + d.days, 0);
   const size  = 220;
 
-  body.innerHTML = `
-    <canvas id="pie-canvas" width="${size}" height="${size}" style="display:block;margin:0 auto 20px"></canvas>
-    <ul class="pie-legend"></ul>
-  `;
+  body.innerHTML =
+    '<canvas id="pie-canvas" width="' + size + '" height="' + size + '" style="display:block;margin:0 auto 20px"></canvas>' +
+    '<ul class="pie-legend"></ul>';
+
+  // Show modal first so canvas is visible, then draw
+  modal.classList.remove('hidden');
 
   const canvas = document.getElementById('pie-canvas');
   drawDonutChart(canvas, data);
