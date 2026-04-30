@@ -413,6 +413,78 @@ header h1 {
   padding: 4px 2px;
 }
 
+/* ── This Week panel ──────────────────────────────────────────────────────── */
+
+.week-ooo-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 4px;
+  border-radius: var(--radius-sm);
+}
+
+.week-ooo-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.week-ooo-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.week-ooo-dates {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── Filter indicator ─────────────────────────────────────────────────────── */
+
+.filter-indicator {
+  font-size: 11px;
+  color: var(--primary);
+  background: #eef2ff;
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-indicator.hidden {
+  display: none;
+}
+
+.clear-filter-btn {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--primary);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0;
+  font-family: inherit;
+}
+
+.clear-filter-btn:hover {
+  text-decoration: underline;
+}
+
+/* ── Member filter highlight ──────────────────────────────────────────────── */
+
+.member-item {
+  cursor: pointer;
+}
+
+.member-item.member-filtered {
+  background: #eef2ff;
+  border-left: 3px solid var(--primary);
+  padding-left: 5px;
+}
+
 /* ── Calendar ─────────────────────────────────────────────────────────────── */
 
 .calendar-area {
@@ -473,6 +545,25 @@ header h1 {
 
 .day-cell.has-ooo {
   cursor: pointer;
+}
+
+/* ── Conflict badge ───────────────────────────────────────────────────────── */
+
+.conflict-badge {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 13px;
+  height: 13px;
+  background: #ef4444;
+  color: white;
+  font-size: 8px;
+  font-weight: 700;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
 }
 
 .day-cell.holiday {

@@ -2,7 +2,7 @@
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const VERSION = '1.3';
+const VERSION = '1.4';
 const STORAGE_KEY = 'team-ooo-v1';
 
 const MONTH_NAMES = [
@@ -45,6 +45,7 @@ let state = {
   year: new Date().getFullYear(),
   members: [],
   entries: [],
+  filterMemberId: null, // not persisted — UI-only
 };
 
 /**
@@ -124,16 +125,29 @@ function ymd(y, m, d) {
   return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
-/** All members whose OOO covers the given date string */
-function getOooForDate(dateStr) {
+/** All members whose OOO covers the given date string.
+ *  Pass ignoreFilter=true to bypass the active member filter. */
+function getOooForDate(dateStr, ignoreFilter = false) {
   const results = [];
   for (const entry of state.entries) {
     if (entry.startDate <= dateStr && dateStr <= entry.endDate) {
+      if (!ignoreFilter && state.filterMemberId && entry.memberId !== state.filterMemberId) continue;
       const member = state.members.find(m => m.id === entry.memberId);
       if (member) results.push({ entry, member });
     }
   }
   return results;
+}
+
+/** Returns an array of 7 YYYY-MM-DD strings for the current Sun–Sat week */
+function getThisWeekDates() {
+  const today = new Date();
+  const dow = today.getDay();
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - dow + i);
+    return ymd(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  });
 }
 
 /** Next unused color from PRESET_COLORS */
@@ -167,24 +181,67 @@ function fmtDate(dateStr) {
 
 function renderAll() {
   document.getElementById('current-year').textContent = state.year;
+  renderThisWeek();
   renderMembersList();
   populateMemberSelect();
   renderCalendar();
   renderEntriesList();
 }
 
+function renderThisWeek() {
+  const titleEl = document.getElementById('this-week-title');
+  const listEl  = document.getElementById('this-week-list');
+  const dates   = getThisWeekDates();
+
+  const s = new Date(dates[0] + 'T00:00:00');
+  const e = new Date(dates[6] + 'T00:00:00');
+  const fmt = { month: 'short', day: 'numeric' };
+  titleEl.textContent = `This Week · ${s.toLocaleDateString(undefined, fmt)} – ${e.toLocaleDateString(undefined, fmt)}`;
+
+  // Collect OOO per member across the week (always ignore filter)
+  const memberOoo = new Map();
+  dates.forEach(ds => {
+    getOooForDate(ds, true).forEach(({ member, entry }) => {
+      if (!memberOoo.has(member.id)) memberOoo.set(member.id, { member, days: [] });
+      memberOoo.get(member.id).days.push(ds);
+    });
+  });
+
+  listEl.innerHTML = '';
+  if (memberOoo.size === 0) {
+    listEl.innerHTML = '<li class="empty-msg">Everyone\'s in this week!</li>';
+    return;
+  }
+  [...memberOoo.values()].forEach(({ member, days }) => {
+    const li = document.createElement('li');
+    li.className = 'week-ooo-item';
+    li.innerHTML = `
+      <span class="member-dot" style="background:${member.color}"></span>
+      <div class="week-ooo-info">
+        <span class="week-ooo-name">${escHtml(member.name)}</span>
+        <span class="week-ooo-dates">${fmtRange(days[0], days[days.length - 1])}</span>
+      </div>`;
+    listEl.appendChild(li);
+  });
+}
+
 function renderMembersList() {
   const list = document.getElementById('members-list');
+  const indicator = document.getElementById('filter-indicator');
   list.innerHTML = '';
 
   if (state.members.length === 0) {
     list.innerHTML = '<li class="empty-msg">No members yet.</li>';
+    indicator.classList.add('hidden');
     return;
   }
 
   state.members.forEach(m => {
+    const isActive = state.filterMemberId === m.id;
     const li = document.createElement('li');
-    li.className = 'member-item';
+    li.className = 'member-item' + (isActive ? ' member-filtered' : '');
+    li.dataset.id = m.id;
+    li.title = isActive ? 'Click to show all members' : 'Click to filter calendar';
     li.innerHTML = `
       <span class="member-dot" style="background:${m.color}"></span>
       <span class="member-name">${escHtml(m.name)}</span>
@@ -192,6 +249,23 @@ function renderMembersList() {
     `;
     list.appendChild(li);
   });
+
+  // Filter active indicator
+  if (state.filterMemberId) {
+    const m = state.members.find(x => x.id === state.filterMemberId);
+    if (m) {
+      indicator.innerHTML = `Filtering: <strong>${escHtml(m.name)}</strong> <button class="clear-filter-btn" id="clear-filter-btn">&times; Clear</button>`;
+      indicator.classList.remove('hidden');
+      document.getElementById('clear-filter-btn').addEventListener('click', () => {
+        state.filterMemberId = null;
+        renderMembersList();
+        renderCalendar();
+        renderEntriesList();
+      });
+    }
+  } else {
+    indicator.classList.add('hidden');
+  }
 }
 
 function populateMemberSelect() {
@@ -263,7 +337,8 @@ function buildMonthCard(year, monthIdx, holidays) {
   // Day cells
   for (let d = 1; d <= daysInMonth; d++) {
     const ds = ymd(year, monthIdx + 1, d);
-    const ooos = getOooForDate(ds);
+    const allOoos = getOooForDate(ds, true); // all members, used for conflict detection
+    const ooos    = getOooForDate(ds);       // respects active filter, used for bars
     const dow = (firstDow + d - 1) % 7;
 
     const cell = document.createElement('div');
@@ -283,6 +358,16 @@ function buildMonthCard(year, monthIdx, holidays) {
     num.className = 'day-num';
     num.textContent = d;
     cell.appendChild(num);
+
+    // Conflict badge — shown when 2+ people OOO and no filter active
+    if (!state.filterMemberId && allOoos.length >= 2) {
+      cell.classList.add('has-conflict');
+      const badge = document.createElement('div');
+      badge.className = 'conflict-badge';
+      badge.textContent = allOoos.length;
+      badge.title = `${allOoos.length} people OOO`;
+      cell.appendChild(badge);
+    }
 
     // OOO bars
     if (ooos.length > 0) {
@@ -321,7 +406,11 @@ function renderEntriesList() {
 
   const y = String(state.year);
   const yearEntries = state.entries
-    .filter(e => e.startDate.slice(0, 4) === y || e.endDate.slice(0, 4) === y)
+    .filter(e => {
+      const inYear = e.startDate.slice(0, 4) === y || e.endDate.slice(0, 4) === y;
+      const inFilter = !state.filterMemberId || e.memberId === state.filterMemberId;
+      return inYear && inFilter;
+    })
     .sort((a, b) => a.startDate.localeCompare(b.startDate));
 
   badge.textContent = yearEntries.length || '';
@@ -431,6 +520,13 @@ function handleAddMember() {
   closeMemberModal();
 }
 
+function handleMemberFilter(id) {
+  state.filterMemberId = (state.filterMemberId === id) ? null : id;
+  renderMembersList();
+  renderCalendar();
+  renderEntriesList();
+}
+
 function handleRemoveMember(id) {
   const member = state.members.find(m => m.id === id);
   if (!member) return;
@@ -438,6 +534,7 @@ function handleRemoveMember(id) {
 
   state.members = state.members.filter(m => m.id !== id);
   state.entries = state.entries.filter(e => e.memberId !== id);
+  if (state.filterMemberId === id) state.filterMemberId = null;
   saveState();
   renderAll();
 }
@@ -549,10 +646,12 @@ function setupEventListeners() {
   // OOO form
   document.getElementById('add-ooo-form').addEventListener('submit', handleAddEntry);
 
-  // Delegated: remove member
+  // Delegated: remove member or filter by member
   document.getElementById('members-list').addEventListener('click', e => {
-    const btn = e.target.closest('.remove-member');
-    if (btn) handleRemoveMember(btn.dataset.id);
+    const removeBtn = e.target.closest('.remove-member');
+    if (removeBtn) { handleRemoveMember(removeBtn.dataset.id); return; }
+    const item = e.target.closest('.member-item[data-id]');
+    if (item) handleMemberFilter(item.dataset.id);
   });
 
   // Delegated: remove entry
@@ -565,7 +664,7 @@ function setupEventListeners() {
   document.getElementById('calendar-grid').addEventListener('mouseover', e => {
     const cell = e.target.closest('.day-cell');
     if (!cell || cell.classList.contains('empty')) { floatingTooltip.hide(); return; }
-    const ooos = getOooForDate(cell.dataset.date);
+    const ooos = getOooForDate(cell.dataset.date, true); // always show everyone in tooltip
     const holiday = cell.dataset.holiday || null;
     if (!ooos.length && !holiday) { floatingTooltip.hide(); return; }
     floatingTooltip.show(cell.dataset.date, ooos, holiday, cell.getBoundingClientRect());
