@@ -411,12 +411,24 @@ header h1 {
 }
 
 .month-card {
-  background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 14px 12px 10px;
   overflow: visible;
 }
+
+.month-card:nth-child(1)  { background: #dbeafe; } /* Jan – blue       */
+.month-card:nth-child(2)  { background: #fce7f3; } /* Feb – pink       */
+.month-card:nth-child(3)  { background: #dcfce7; } /* Mar – green      */
+.month-card:nth-child(4)  { background: #fef9c3; } /* Apr – yellow     */
+.month-card:nth-child(5)  { background: #f3e8ff; } /* May – purple     */
+.month-card:nth-child(6)  { background: #ffedd5; } /* Jun – orange     */
+.month-card:nth-child(7)  { background: #fee2e2; } /* Jul – red        */
+.month-card:nth-child(8)  { background: #fef3c7; } /* Aug – amber      */
+.month-card:nth-child(9)  { background: #ccfbf1; } /* Sep – teal       */
+.month-card:nth-child(10) { background: #ecfccb; } /* Oct – lime       */
+.month-card:nth-child(11) { background: #e0f2fe; } /* Nov – sky        */
+.month-card:nth-child(12) { background: #e0e7ff; } /* Dec – indigo     */
 
 .month-name {
   font-size: 13px;
