@@ -70,9 +70,26 @@ let state = {
 
 // ── Storage ───────────────────────────────────────────────────────────────────
 
+// Safe storage: uses localStorage when available, otherwise falls back to
+// an in-memory store (app works but data won't survive a page refresh).
+const store = (() => {
+  try {
+    localStorage.setItem('_chk', '1');
+    localStorage.removeItem('_chk');
+    return localStorage;
+  } catch (_) {
+    const mem = {};
+    return {
+      getItem:    k    => (k in mem ? mem[k] : null),
+      setItem:    (k, v) => { mem[k] = String(v); },
+      removeItem: k    => { delete mem[k]; },
+    };
+  }
+})();
+
 function loadState() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = store.getItem(STORAGE_KEY);
     if (raw) {
       const saved = JSON.parse(raw);
       state.members = saved.members || [];
@@ -84,7 +101,7 @@ function loadState() {
 
 function saveState() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    store.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch (_) {}
 }
 
@@ -175,7 +192,7 @@ function applyTheme(dark) {
   document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
   const btn = document.getElementById('theme-toggle');
   if (btn) btn.innerHTML = dark ? '&#9728;' : '&#9790;'; // ☀ / ☾
-  try { localStorage.setItem('ooo-theme', dark ? 'dark' : 'light'); } catch (_) {}
+  store.setItem('ooo-theme', dark ? 'dark' : 'light');
 }
 
 function toggleDarkMode() {
@@ -851,12 +868,7 @@ function setupEventListeners() {
 function init() {
   document.getElementById('version-badge').textContent = 'v' + VERSION;
   // Restore saved theme before first render so colours are correct
-  try {
-    const savedTheme = localStorage.getItem('ooo-theme');
-    applyTheme(savedTheme === 'dark');
-  } catch (_) {
-    applyTheme(false);
-  }
+  applyTheme(store.getItem('ooo-theme') === 'dark');
   loadState();
   setupEventListeners();
   renderAll();
