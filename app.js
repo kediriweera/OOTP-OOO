@@ -2,7 +2,7 @@
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const VERSION = '1.9';
+const VERSION = '2.0';
 const STORAGE_KEY = 'team-ooo-v1';
 
 const MONTH_NAMES = [
@@ -84,19 +84,15 @@ let docRef = null; // Firestore document reference
 function setConnectionStatus(status) {
   const dot = document.getElementById('connection-status');
   if (!dot) return;
-  if (status === 'connected') {
-    dot.className = 'connection-dot connected';
-    dot.title = 'Synced with cloud';
-  } else if (status === 'offline') {
-    dot.className = 'connection-dot offline';
-    dot.title = 'Offline — data saved locally only';
-  } else if (status === 'error') {
-    dot.className = 'connection-dot error';
-    dot.title = 'Save failed — check console for details';
-  } else {
-    dot.className = 'connection-dot';
-    dot.title = 'Connecting...';
-  }
+  const map = {
+    connected: ['connected', 'Synced with cloud'],
+    saving:    ['saving',    'Saving…'],
+    offline:   ['offline',   'Offline — data saved locally only'],
+    error:     ['error',     'Save failed — check browser console for details'],
+  };
+  const [cls, title] = map[status] || ['', 'Connecting…'];
+  dot.className = 'connection-dot' + (cls ? ' ' + cls : '');
+  dot.title = title;
 }
 
 function initFirebase() {
@@ -109,10 +105,6 @@ function initFirebase() {
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     const db = firebase.firestore();
-
-    // Cache writes locally so they survive brief network blips
-    db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
-
     docRef = db.collection('ooo-data').doc('main');
 
     docRef.onSnapshot(doc => {
@@ -169,9 +161,11 @@ function loadLocalState() {
 
 function saveState() {
   if (docRef) {
+    setConnectionStatus('saving');
     docRef.set({ members: state.members, entries: state.entries })
+      .then(() => setConnectionStatus('connected'))
       .catch(err => {
-        console.warn('Firestore save failed:', err);
+        console.error('Firestore save failed:', err.code, err.message);
         setConnectionStatus('error');
       });
   }

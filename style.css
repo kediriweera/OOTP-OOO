@@ -108,6 +108,7 @@ header h1 {
 }
 
 .connection-dot.connected { background: #22c55e; }
+.connection-dot.saving    { background: #f59e0b; }
 .connection-dot.offline   { background: var(--text-light); }
 .connection-dot.error     { background: #ef4444; }
 
