@@ -2,7 +2,7 @@
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const VERSION = '1.8';
+const VERSION = '1.9';
 const STORAGE_KEY = 'team-ooo-v1';
 
 const MONTH_NAMES = [
@@ -90,6 +90,9 @@ function setConnectionStatus(status) {
   } else if (status === 'offline') {
     dot.className = 'connection-dot offline';
     dot.title = 'Offline — data saved locally only';
+  } else if (status === 'error') {
+    dot.className = 'connection-dot error';
+    dot.title = 'Save failed — check console for details';
   } else {
     dot.className = 'connection-dot';
     dot.title = 'Connecting...';
@@ -97,9 +100,19 @@ function setConnectionStatus(status) {
 }
 
 function initFirebase() {
+  if (window.location.protocol === 'file:') {
+    document.getElementById('file-warning').classList.remove('hidden');
+    setConnectionStatus('offline');
+    return;
+  }
+
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     const db = firebase.firestore();
+
+    // Cache writes locally so they survive brief network blips
+    db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+
     docRef = db.collection('ooo-data').doc('main');
 
     docRef.onSnapshot(doc => {
@@ -109,7 +122,6 @@ function initFirebase() {
         state.members = data.members || [];
         state.entries = data.entries || [];
         state.filterMemberId = prevFilter;
-        // Also cache locally
         try { store.setItem(STORAGE_KEY, JSON.stringify({ members: state.members, entries: state.entries })); } catch (_) {}
       }
       setConnectionStatus('connected');
@@ -156,12 +168,13 @@ function loadLocalState() {
 }
 
 function saveState() {
-  // Write to Firestore (real-time sync across all devices)
   if (docRef) {
     docRef.set({ members: state.members, entries: state.entries })
-      .catch(err => console.warn('Firestore save failed:', err));
+      .catch(err => {
+        console.warn('Firestore save failed:', err);
+        setConnectionStatus('error');
+      });
   }
-  // Always keep a local copy as backup
   try { store.setItem(STORAGE_KEY, JSON.stringify({ members: state.members, entries: state.entries })); } catch (_) {}
 }
 
