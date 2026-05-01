@@ -2,7 +2,7 @@
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const VERSION = '2.1';
+const VERSION = '2.2';
 const STORAGE_KEY = 'team-ooo-v1';
 
 const MONTH_NAMES = [
@@ -117,6 +117,8 @@ function initFirebase() {
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     const db = firebase.firestore();
+    // Resolve writes from local cache immediately; server sync is background
+    db.enablePersistence().catch(() => {});
     docRef = db.collection('ooo-data').doc('main');
 
     docRef.onSnapshot(doc => {
