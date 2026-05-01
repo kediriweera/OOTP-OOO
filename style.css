@@ -112,6 +112,27 @@ header h1 {
 .connection-dot.offline   { background: var(--text-light); }
 .connection-dot.error     { background: #ef4444; }
 
+/* Save toast */
+.save-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 10px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #fff;
+  background: #22c55e;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+  z-index: 9999;
+}
+.save-toast.error { background: #ef4444; }
+.save-toast.show  { opacity: 1; transform: translateY(0); }
+
 .file-warning {
   background: #fef3c7;
   border-bottom: 1px solid #f59e0b;

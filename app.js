@@ -2,7 +2,7 @@
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const VERSION = '2.0';
+const VERSION = '2.1';
 const STORAGE_KEY = 'team-ooo-v1';
 
 const MONTH_NAMES = [
@@ -79,7 +79,19 @@ const FIREBASE_CONFIG = {
   appId:             '1:380921330594:web:b671a2ccf55a5450a250fb',
 };
 
-let docRef = null; // Firestore document reference
+let docRef = null;
+let isSaving = false;
+let toastTimer = null;
+
+function showToast(msg, isError = false) {
+  const el = document.getElementById('save-toast');
+  if (!el) return;
+  clearTimeout(toastTimer);
+  el.textContent = msg;
+  el.className = 'save-toast' + (isError ? ' error' : '');
+  requestAnimationFrame(() => el.classList.add('show'));
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
 
 function setConnectionStatus(status) {
   const dot = document.getElementById('connection-status');
@@ -116,11 +128,11 @@ function initFirebase() {
         state.filterMemberId = prevFilter;
         try { store.setItem(STORAGE_KEY, JSON.stringify({ members: state.members, entries: state.entries })); } catch (_) {}
       }
-      setConnectionStatus('connected');
+      if (!isSaving) setConnectionStatus('connected');
       renderAll();
     }, err => {
       console.warn('Firestore unavailable:', err);
-      setConnectionStatus('offline');
+      if (!isSaving) setConnectionStatus('offline');
     });
   } catch (err) {
     console.warn('Firebase init failed:', err);
@@ -161,12 +173,19 @@ function loadLocalState() {
 
 function saveState() {
   if (docRef) {
+    isSaving = true;
     setConnectionStatus('saving');
     docRef.set({ members: state.members, entries: state.entries })
-      .then(() => setConnectionStatus('connected'))
+      .then(() => {
+        isSaving = false;
+        setConnectionStatus('connected');
+        showToast('Saved to cloud ✓');
+      })
       .catch(err => {
+        isSaving = false;
         console.error('Firestore save failed:', err.code, err.message);
         setConnectionStatus('error');
+        showToast('Save failed: ' + (err.code || err.message), true);
       });
   }
   try { store.setItem(STORAGE_KEY, JSON.stringify({ members: state.members, entries: state.entries })); } catch (_) {}
