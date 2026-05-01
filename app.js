@@ -2,7 +2,7 @@
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const VERSION = '1.7';
+const VERSION = '1.8';
 const STORAGE_KEY = 'team-ooo-v1';
 
 const MONTH_NAMES = [
@@ -103,7 +103,7 @@ function initFirebase() {
     docRef = db.collection('ooo-data').doc('main');
 
     docRef.onSnapshot(doc => {
-      if (doc.exists()) {
+      if (doc.exists) {
         const data = doc.data();
         const prevFilter = state.filterMemberId;
         state.members = data.members || [];
